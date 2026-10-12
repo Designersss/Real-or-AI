@@ -26,7 +26,7 @@ npm run build
 
 - Approved black + lime identity; the landing content stays within one viewport on common screen sizes (with natural overflow on extremely small or zoomed screens).
 - Home has only logo, hero, Start Game, image collage and minimal stats. The bottom information panels and footer are removed.
-- Each round shows a single photo and two choices: REAL or AI.
+- Each round shows a single photo and two choices: REAL or AI. The game is viewport-sized (including mobile and landscape), with the full image preserved using contain fit. Extremely short/zoomed portrait windows can scroll rather than crop the controls.
 - Answers advance immediately; **no per-round right/wrong result, no hint, no current score, no class-count display**.
 - At the end, users see the final score and can optionally expand **Review Your 10 Answers** for their own picks, labels and sources.
 - `makeDeck` produces **3–7 real** and **7–3 AI** in every 10-round run, with category mixing across portrait/animal/scene. A seed determines the composition and order so friends share a reproducible deck.
@@ -46,7 +46,7 @@ Current links: `?challenge=v2-<8 hex digits>&from=<score>`. V1 prototype links a
 
 ## Quality gates
 
-GitHub Actions runs lint, typecheck, unit tests and build. Browser/device QA and source-rights review remain separate release blockers; the current project is a development prototype, not a production-ready photo collection.
+GitHub Actions runs lint, typecheck, unit tests, build and Chromium viewport E2E across common desktop/mobile sizes. Run `npm run test:e2e` after `npx playwright install chromium` locally. Browser/device QA and source-rights review remain separate release blockers; the current project is a development prototype, not a production-ready photo collection.
 
 ## Privacy and security
 
