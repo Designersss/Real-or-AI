@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowRight, ArrowUpRight, BrainCircuit, Check, Copy, ExternalLink,
-  ImageIcon, Link2, Menu, RotateCcw, Share2, Sparkles, Target, Trophy, X,
+  ArrowRight, ArrowUpRight, BrainCircuit, Copy, ExternalLink,
+  ImageIcon, Link2, RotateCcw, Share2, Sparkles, Target, Trophy, X,
 } from 'lucide-react';
 import { catalog } from './catalog';
 import type { ImageKind } from './catalog';
@@ -12,13 +12,12 @@ import type { Guess } from './game';
 import { readStats, saveResult } from './stats';
 
 type Screen = 'start' | 'game' | 'results';
-type Choice = ImageKind | 'skipped' | null;
 const incoming = typeof window !== 'undefined' ? readChallenge(window.location.search) : null;
 const landingImages = {
-  landscape: catalog.find(image => image.id === 'real-landscape-01')!,
-  animal: catalog.find(image => image.id === 'real-animal-01')!,
-  city: catalog.find(image => image.id === 'real-landscape-02')!,
-  portrait: catalog.find(image => image.id === 'real-portrait-01')!,
+  landscape: catalog.find(image => image.kind === 'real' && image.category === 'scene')!,
+  animal: catalog.find(image => image.kind === 'real' && image.category === 'animal')!,
+  city: catalog.find(image => image.kind === 'ai' && image.category === 'scene')!,
+  portrait: catalog.find(image => image.kind === 'ai' && image.category === 'portrait')!,
 };
 
 function Logo({ icon = false }: { icon?: boolean }) {
@@ -31,62 +30,36 @@ function Logo({ icon = false }: { icon?: boolean }) {
 }
 
 function Landing({ onStart, stats }: { onStart: () => void; stats: { games: number; best: number } }) {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="site-shell">
+    <div className="site-shell landing-page">
       <div className="landing-shell">
         <header className="site-header">
           <a href="/" aria-label="Real or AI home" className="brand-mark header-logo"><BrainCircuit size={26}/></a>
-          <nav aria-label="Main navigation" className={open ? 'header-nav is-open' : 'header-nav'}>
-            <a onClick={() => setOpen(false)} href="#about">About</a>
-            <a onClick={() => setOpen(false)} href="#how-it-works">How it works</a>
-            <a onClick={() => setOpen(false)} href="#faq">FAQ</a>
-          </nav>
-          <button className="menu-button" type="button" onClick={() => setOpen(!open)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open}>
-            {open ? <X size={23}/> : <Menu size={23}/>}
-          </button>
+          {stats.games > 0 && <span className="home-best">PERSONAL BEST: {stats.best}/10</span>}
         </header>
-        <main>
-          <section className="hero" aria-labelledby="hero-title">
-            <div className="hero-copy">
-              <span className="eyebrow"><span className="eyebrow-dot"/> THE INTERNET IS GETTING HARDER TO READ</span>
-              <h1 id="hero-title">REAL<br/><span>or</span> AI?</h1>
-              <h2>Can you tell what&apos;s real?</h2>
-              <p>One quick game to test your eye. 10 images, 2 choices. See how many you can get right — and challenge your friends.</p>
-              {incoming && <div className="incoming-tag"><Sparkles size={16}/> A friend challenged you{incoming.score !== null ? ' · Their score: ' + incoming.score + '/10' : ''}</div>}
-              <button type="button" onClick={onStart} className="button button-primary hero-cta">START {incoming ? 'CHALLENGE' : 'GAME'} <ArrowRight size={19}/></button>
-              <div className="hero-metrics">
-                <div><strong>10</strong><span>images</span></div>
-                <div><strong>2</strong><span>choices</span></div>
-                <div><strong>0–10</strong><span>your score</span></div>
-              </div>
+        <main className="hero" aria-labelledby="hero-title">
+          <div className="hero-copy">
+            <span className="eyebrow"><span className="eyebrow-dot"/> THE INTERNET IS GETTING HARDER TO READ</span>
+            <h1 id="hero-title">REAL<br/><span>or</span> AI?</h1>
+            <h2>Can you tell what&apos;s real?</h2>
+            <p>10 images. 2 choices. No clues until the end. Trust your eyes and challenge your friends.</p>
+            {incoming && <div className="incoming-tag"><Sparkles size={16}/> A friend challenged you{incoming.score !== null ? ' · Their score: ' + incoming.score + '/10' : ''}</div>}
+            <button type="button" onClick={onStart} className="button button-primary hero-cta">START {incoming ? 'CHALLENGE' : 'GAME'} <ArrowRight size={19}/></button>
+            <div className="hero-metrics">
+              <div><strong>10</strong><span>images</span></div>
+              <div><strong>2</strong><span>choices</span></div>
+              <div><strong>0–10</strong><span>your score</span></div>
             </div>
-            <div className="hero-collage" aria-hidden="true">
-              <div className="photo-card photo-card-one"><img src={landingImages.landscape.url} alt="" loading="eager"/></div>
-              <div className="photo-card photo-card-two"><img src={landingImages.animal.url} alt="" loading="eager"/></div>
-              <div className="photo-card photo-card-three"><img src={landingImages.city.url} alt="" loading="lazy"/></div>
-              <div className="photo-card photo-card-four"><img src={landingImages.portrait.url} alt="" loading="lazy"/></div>
-              <div className="collage-glow"/>
-            </div>
-          </section>
+          </div>
+          <div className="hero-collage" aria-hidden="true">
+            <div className="photo-card photo-card-one"><img src={landingImages.landscape.url} alt="" loading="eager"/></div>
+            <div className="photo-card photo-card-two"><img src={landingImages.animal.url} alt="" loading="eager"/></div>
+            <div className="photo-card photo-card-three"><img src={landingImages.city.url} alt="" loading="lazy"/></div>
+            <div className="photo-card photo-card-four"><img src={landingImages.portrait.url} alt="" loading="lazy"/></div>
+            <div className="collage-glow"/>
+          </div>
         </main>
       </div>
-      <section className="below-fold" aria-label="Game information">
-        <div className="below-head" id="about"><span className="eyebrow">THE CHALLENGE</span><h2>Look closer. Trust less.</h2><p>AI imagery is getting better every day. Think you can still spot the difference?</p></div>
-        <div className="how-grid" id="how-it-works">
-          <article><span>01</span><ImageIcon/><h3>See the image</h3><p>Look at a photo. Take your time and inspect the details.</p></article>
-          <article><span>02</span><Target/><h3>Make your call</h3><p>Decide whether it&apos;s a real photograph or AI-generated.</p></article>
-          <article><span>03</span><Share2/><h3>Challenge friends</h3><p>Share your score so friends can try the exact same images.</p></article>
-        </div>
-        <div id="faq" className="faq-section">
-          <h2>Good to know</h2>
-          <p><strong>Do I need an account?</strong> Nope. You can play immediately, for free.</p>
-          <p><strong>Do we use your camera?</strong> Never. We only show images from our game catalog.</p>
-          <p><strong>Is this an AI detector?</strong> No. It&apos;s a visual guessing game, not a forensic tool.</p>
-        </div>
-        {stats.games > 0 && <p className="personal-stats">Your personal best: <strong>{stats.best}/10</strong> · {stats.games} {stats.games === 1 ? 'game' : 'games'} played on this device</p>}
-      </section>
-      <footer className="site-footer"><Logo/><span>Made for curious eyes · No signup required</span><a href="https://github.com/Designersss/Real-or-AI" target="_blank" rel="noopener noreferrer">GitHub <ArrowUpRight size={14}/></a></footer>
     </div>
   );
 }
@@ -118,8 +91,8 @@ function App() {
   const [seed, setSeed] = useState<string | null>(null);
   const [round, setRound] = useState(0);
   const [guesses, setGuesses] = useState<Guess[]>([]);
-  const [selection, setSelection] = useState<Choice>(null);
-  const [sourceOpen, setSourceOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const submitLock = useRef(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -137,36 +110,31 @@ function App() {
     setSeed(value);
     setRound(0);
     setGuesses([]);
-    setSelection(null);
+    setReviewOpen(false);
+    submitLock.current = false;
     setImageError(false);
     setReload(0);
-    setSourceOpen(false);
     setShareOpen(false);
     setScreen('game');
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
-  function pick(choice: ImageKind) {
-    if (!image || selection !== null || imageError) return;
-    setSelection(choice);
-    setGuesses(existing => [...existing, { id: image.id, choice, correct: image.kind === choice }]);
-  }
+  useEffect(() => {
+    // The lock stops rapid double-taps from submitting twice for a round.
+    submitLock.current = false;
+  }, [round, screen]);
 
-  function skip() {
-    if (!image || selection !== null || !imageError) return;
-    setSelection('skipped');
-    setGuesses(existing => [...existing, { id: image.id, choice: null, correct: false }]);
-  }
-
-  function next() {
-    if (selection === null) return;
-    setSourceOpen(false);
+  function submitGuess(choice: ImageKind | null) {
+    if (!image || submitLock.current || (choice === null ? !imageError : imageError)) return;
+    submitLock.current = true;
+    const guess: Guess = { id: image.id, choice, correct: choice === image.kind };
+    const updated = [...guesses, guess];
+    setGuesses(updated);
     if (round === ROUND_COUNT - 1) {
-      setStats(saveResult(score));
+      setStats(saveResult(countCorrect(updated)));
       setScreen('results');
     } else {
       setRound(previous => previous + 1);
-      setSelection(null);
       setImageError(false);
       setReload(0);
     }
@@ -189,9 +157,6 @@ function App() {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  const answered = selection !== null;
-  const correct = image && selection === image.kind;
-
   return (
     <>
       {screen === 'start' && <Landing onStart={() => start()} stats={stats}/>}
@@ -200,14 +165,14 @@ function App() {
           <header className="game-header"><Logo/><button className="exit-button" type="button" onClick={() => setScreen('start')}>EXIT <X size={17}/></button></header>
           <main className="game-main">
             <div className="game-top"><span className="eyebrow">LOOK CLOSELY</span><strong>{round + 1} <span>/ {ROUND_COUNT}</span></strong></div>
-            <Progress completed={round + (answered ? 1 : 0)} current={round}/>
+            <Progress completed={round} current={round}/>
             <h1 className="game-prompt">Real photograph or AI-generated?</h1>
             <div className="image-stage">
               {imageError ? (
                 <div className="image-fail">
                   <ImageIcon size={38}/><strong>Image couldn&apos;t load</strong><p>Check your connection or skip this round. Skipped images count as incorrect.</p>
                   <button className="button button-secondary" type="button" onClick={() => { setImageError(false); setReload(value => value + 1); }}>Retry image <RotateCcw size={17}/></button>
-                  <button type="button" className="subtle-link" onClick={skip}>Skip this image</button>
+                  <button type="button" className="subtle-link" onClick={() => submitGuess(null)}>Skip this image</button>
                 </div>
               ) : (
                 <img
@@ -217,25 +182,12 @@ function App() {
                   onError={() => setImageError(true)}
                 />
               )}
-              {answered && selection !== 'skipped' && <div className="image-answer-label"><Check size={15}/> {image.kind === 'real' ? 'REAL' : 'AI GENERATED'}</div>}
             </div>
-            {!answered ? (
-              <div className="choice-grid" aria-label="Choose real or AI">
-                <button type="button" className="choice-button" disabled={imageError} onClick={() => pick('real')}>REAL <span>A camera caught this</span></button>
-                <button type="button" className="choice-button choice-ai" disabled={imageError} onClick={() => pick('ai')}>AI <span>Created by a model</span></button>
-              </div>
-            ) : (
-              <div className="reveal-panel">
-                <div className="reveal-message">
-                  <span className={'reveal-icon ' + (correct ? 'correct' : 'incorrect')}>{correct ? <Check size={21}/> : <X size={21}/>}</span>
-                  <div><strong>{selection === 'skipped' ? 'Round skipped' : correct ? 'Correct!' : 'Not quite!'}</strong>
-                    <p>{image.kind === 'real' ? 'This is a real photograph.' : 'This image was generated by AI.'}</p>
-                    <button className="source-link" type="button" onClick={() => setSourceOpen(true)}>View image source <ArrowUpRight size={14}/></button>
-                  </div>
-                </div>
-                <button className="button button-primary next-button" onClick={next} type="button">{round === ROUND_COUNT - 1 ? 'SEE RESULTS' : 'NEXT'} <ArrowRight size={17}/></button>
-              </div>
-            )}
+            <div className="choice-grid" aria-label="Choose real or AI">
+              <button type="button" className="choice-button" disabled={imageError} onClick={() => submitGuess('real')}>REAL <span>A camera caught this</span></button>
+              <button type="button" className="choice-button choice-ai" disabled={imageError} onClick={() => submitGuess('ai')}>AI <span>Created by a model</span></button>
+            </div>
+            <p className="blind-hint">No hints. Answers are revealed after all 10 rounds.</p>
             <div className="round-footer"><span>TRUST YOUR EYES. QUESTION EVERYTHING.</span><span>ROUND {round + 1} OF {ROUND_COUNT}</span></div>
           </main>
         </div>
@@ -269,20 +221,29 @@ function App() {
                 <div><Target size={20}/><strong>{score * 10}%</strong><span>accuracy</span></div>
               </div>
               <div className="result-previous">Your best: <strong>{stats.best}/10</strong> · Games played: {stats.games}</div>
+              <button type="button" className="review-toggle" aria-expanded={reviewOpen} onClick={() => setReviewOpen(open => !open)}>
+                {reviewOpen ? 'HIDE ANSWERS' : 'REVIEW YOUR 10 ANSWERS'} <ArrowRight size={16}/>
+              </button>
+              {reviewOpen && <div className="answer-review">
+                {guesses.map((guess, index) => {
+                  const item = deck.find(candidate => candidate.id === guess.id);
+                  if (!item) return null;
+                  return <article key={guess.id} className="review-item">
+                    <img src={item.url} alt={item.alt} loading="lazy"/>
+                    <div>
+                      <span className="review-index">ROUND {index + 1}</span>
+                      <strong>{item.kind === 'real' ? 'REAL PHOTO' : 'AI GENERATED'}</strong>
+                      <span className={guess.correct ? 'review-correct' : 'review-wrong'}>
+                        Your pick: {guess.choice === null ? 'Skipped' : guess.choice.toUpperCase()} {guess.correct ? '✓' : '✗'}
+                      </span>
+                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">View source <ExternalLink size={13}/></a>
+                    </div>
+                  </article>;
+                })}
+              </div>}
             </div>
           </main>
         </div>
-      )}
-      {sourceOpen && image && (
-        <Dialog title="Image source" onClose={() => setSourceOpen(false)}>
-          <img className="source-preview" alt={image.alt} src={image.url}/>
-          <div className="source-details">
-            <span className="source-category">{image.kind === 'ai' ? 'AI-GENERATED' : 'REAL PHOTOGRAPH'}</span>
-            <p>This {image.kind === 'ai' ? 'generated image' : 'photograph'} is part of the preview image catalog.</p>
-            <dl><dt>Credit</dt><dd>{image.credit}</dd><dt>Dataset</dt><dd>{image.sourceLabel}</dd><dt>Category</dt><dd>{image.category}</dd></dl>
-            <a className="button button-secondary source-outbound" href={image.sourceUrl} target="_blank" rel="noopener noreferrer">View original dataset <ExternalLink size={16}/></a>
-          </div>
-        </Dialog>
       )}
       {shareOpen && seed && (
         <Dialog title="Challenge a friend" onClose={() => setShareOpen(false)}>
