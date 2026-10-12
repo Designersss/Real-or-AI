@@ -1,6 +1,6 @@
 # Real or AI?
 
-A fast, mobile-first guessing game. Can you tell a real photograph from an AI-generated image? Ten rounds, instant reveals, a result worth sharing, and reproducible friend challenges.
+A fast, mobile-first guessing game: **10 blind rounds**, no correctness feedback until the final score, with a repeatable friend challenge.
 
 ## Local development
 
@@ -11,49 +11,43 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite.
-
 ```sh
-npm run check
-npm run deploy
+npm run lint
+npm run typecheck
+npm run test
+npm run build
 ```
 
-Deployment uses Cloudflare Workers Static Assets, configured by `wrangler.jsonc`. Use **Build command** `npm run build` and **Deploy command** `npx wrangler deploy` if deploying from the Cloudflare dashboard. Deployment requires a connected Cloudflare account and project.
+### Cloudflare Workers Static Assets
 
-## Scope
+`wrangler.jsonc` configures a static-assets deployment. Use **Build command** `npm run build` and **Deploy command** `npx wrangler deploy` with Cloudflare.
 
-- Responsive dark/lime design from the approved concept.
-- Ten rounds, five real + five AI images, instant answer reveal and result.
-- URL-seeded challenges: everyone opening the same link gets the same ten images in the same order, with an optional, unverified friend's score.
-- No account, no analytics SDK, no server or AI inference API.
-- Local best score and games played, via `localStorage`.
-- Share via X, Telegram or link copy.
-- Respectful keyboard focus styles, alt text and reduced-motion settings.
-- The code and UI are English-first.
+## UI / game
 
-## Image catalog — **pre-release**
+- Approved black + lime identity; the landing content stays within one viewport on common screen sizes (with natural overflow on extremely small or zoomed screens).
+- Home has only logo, hero, Start Game, image collage and minimal stats. The bottom information panels and footer are removed.
+- Each round shows a single photo and two choices: REAL or AI.
+- Answers advance immediately; **no per-round right/wrong result, no hint, no current score, no class-count display**.
+- At the end, users see the final score and can optionally expand **Review Your 10 Answers** for their own picks, labels and sources.
+- `makeDeck` produces **3–7 real** and **7–3 AI** in every 10-round run, with category mixing across portrait/animal/scene. A seed determines the composition and order so friends share a reproducible deck.
+- Friends' score query value is unverified; not suitable for leaderboards.
+- Personal best and number of completed games stay in localStorage.
+- No sign-up, inference API or server dependency.
 
-`src/catalog.ts` contains a **temporary provenance-labelled preview catalog**, currently with **6 generated images and 17 real samples** from [AI-Detect Arena benchmark](https://github.com/AI-Detect-Arena/benchmark-dataset). Image labels come from the upstream dataset folder structure. The app currently hotlinks its public sample images from raw GitHub.
+## Image catalog — candidate set, not launch-ready
 
-**Not yet the production 40-image catalog.** Before advertising or launching broadly:
+`src/catalog.ts` now lists **60 distinct images**, 30 REAL and 30 AI. The labels are based on upstream photography and generated-image sets: MIT-licensed faces, CC0 dogs, synthetic scenes labelled MIT and real scenes from Unsplash. The complete source inventory, licensing caveats and attribution notes are in [docs/IMAGE-SOURCES.md](docs/IMAGE-SOURCES.md).
 
-1. Verify and document the usage rights for *each image*, especially AI images generated via external model APIs and any upstream photo permissions. Do not assume a repository-level license covers every file.
-2. Confirm image identities/provenance and visually inspect the complete catalog.
-3. Select 20 real and 20 AI images with comparable subject matter and difficulty, optimize to WebP/AVIF, and self-host.
-4. Remove any externally hotlinked samples that aren't cleared for redistribution, and implement a curated editorial credit/source overlay.
+**Important:** image origins and license claims are documented, but the 60 individual images have not yet been manually inspected for difficulty, release suitability or attribution. They are remote-hotlinked from source repositories and Unsplash in the prototype. Before public launch: confirm original licenses and photographers, review realism with human testers, self-host optimized image variants, and check loading on mobile. A permissive dataset README does not by itself prove rights to every included photograph.
 
-The first PR prioritizes working UI and game logic, not final image licensing. **Do not claim it is launch-ready yet.**
+## Challenge versioning
 
-## Challenge model
+Current links: `?challenge=v2-<8 hex digits>&from=<score>`. V1 prototype links are intentionally not accepted because the pool and sampling algorithm changed *before launch*. After launch, add versioned catalogs to keep old shared links stable.
 
-Shared links carry `challenge=v1-<8 hex digits>` and an optional `from=0..10`. The algorithm deterministically samples and shuffles 5 real + 5 AI images. The friend's score is **client-provided and not verified**, intentionally not used for official ranking. Catalog changes that alter the deck must create a new version or retain versioned historic catalogs, or older links could change.
+## Quality gates
 
-This is a fun game, not a scientific image authentication tool. There is no anti-cheat in the client-only MVP.
+GitHub Actions runs lint, typecheck, unit tests and build. Browser/device QA and source-rights review remain separate release blockers; the current project is a development prototype, not a production-ready photo collection.
 
-## Security / privacy
+## Privacy and security
 
-No accounts, user-generated image uploads, or AI API keys. Sources open with `rel="noopener noreferrer"`. We only store basic personal game stats in the current browser. No user scores are uploaded to a server. External sample image servers may receive standard HTTP request metadata; final self-hosted images will eliminate this dependency.
-
-## Checks
-
-`npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` run in GitHub Actions. A pinned dependency lockfile is the next infrastructure task; this bootstrap PR temporarily runs `npm install` in CI.
+No account, uploaded image or backend score storage. Each challenge link contains a local seed and an optional unverified score. External image hosts receive ordinary asset requests; self-hosting is planned for release.
