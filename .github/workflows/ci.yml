@@ -5,9 +5,6 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -19,18 +16,6 @@ jobs:
           node-version: '22'
       # Bootstrap PR: npm lockfile will be committed after dependency resolution.
       - run: npm install --no-audit --no-fund
-      - name: Bootstrap npm lockfile on the first-party feature branch
-        if: github.head_ref == 'feat/foundation-game-ui' && github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          HEAD_BRANCH: ${{ github.head_ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: lock dependency versions"
-            git push origin "HEAD:$HEAD_BRANCH"
-          fi
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
