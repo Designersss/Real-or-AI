@@ -16,6 +16,11 @@ jobs:
           node-version: '22'
       # Bootstrap PR: npm lockfile will be committed after dependency resolution.
       - run: npm install --no-audit --no-fund
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-package-lock
+          path: package-lock.json
+          retention-days: 1
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
