@@ -9,7 +9,14 @@ export interface Guess {
   correct: boolean;
 }
 function nextRandom(seed: number): () => number {
-  let state = seed || 0x9e3779b9;
+  // Avalanche neighboring hexadecimal seeds before the first draw.
+  // Raw xorshift32 produces highly correlated first values for 0,1,2...,
+  // which biased the 3-to-7 distribution toward just 3 and 4.
+  let state = (seed ^ 0x9e3779b9) >>> 0;
+  state = Math.imul(state ^ (state >>> 16), 0x7feb352d);
+  state = Math.imul(state ^ (state >>> 15), 0x846ca68b);
+  state = (state ^ (state >>> 16)) >>> 0;
+  if (state === 0) state = 0x6d2b79f5;
   return () => {
     state ^= state << 13;
     state ^= state >>> 17;
